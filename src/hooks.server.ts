@@ -11,12 +11,11 @@ export async function getUser(userId?: number) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const jwtToken = event.cookies.get('uid')
+	const authCookie = event.cookies.get('uid')
 
-	if (typeof jwtToken === 'string') {
-		const jwtUser = await verifyJWT<App.Locals['user']>(jwtToken)
-		const user = await getUser(jwtUser?.id)
-		event.locals.user = user
+	if (typeof authCookie === 'string') {
+		const jwtUser = await verifyJWT<App.Locals['user']>(authCookie)
+		event.locals.user = await getUser(jwtUser?.id)
 	}
 
 	const response = await createTRPCHandle({

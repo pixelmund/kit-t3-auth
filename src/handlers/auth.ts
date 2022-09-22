@@ -2,9 +2,7 @@ import { dev } from '$app/environment'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { authenticateUser, hashPassword, verifyPassword } from '../lib/auth'
-import { createCookie, destroyCookie } from '../lib/cookie'
 import { db } from '../lib/db'
-import { signJWT } from '../lib/jwt'
 import { createRouter } from '../lib/trpc.server'
 
 export const auth = createRouter()
@@ -27,7 +25,7 @@ export const auth = createRouter()
 			),
 		resolve: async ({ input, ctx }) => {
 			const user = await authenticateUser(input.email, input.password)
-			ctx.jwtCookie = createCookie('uid', await signJWT({ id: user.id }), 7 * 24 * 60 * 60)
+			await ctx.session.create(user.id)
 			return {
 				isLoggedIn: true,
 				user: { id: user.id },
@@ -58,7 +56,7 @@ export const auth = createRouter()
 				},
 			})
 
-			ctx.jwtCookie = createCookie('uid', await signJWT({ id: user.id }), 7 * 24 * 60 * 60)
+			await ctx.session.create(user.id)
 
 			return {
 				isLoggedIn: true,
@@ -68,7 +66,7 @@ export const auth = createRouter()
 	})
 	.mutation('logout', {
 		resolve: async ({ ctx }) => {
-			ctx.jwtCookie = destroyCookie('uid')
+			await ctx.session.destroy()
 			return {
 				isLoggedIn: false,
 			}
@@ -121,7 +119,7 @@ export const auth = createRouter()
 			const passwordReset = await db.passwordReset.findFirst({
 				where: { id: input.code, deletedAt: null },
 			})
-			
+
 			if (!passwordReset) {
 				return { ok: false }
 			}
@@ -165,7 +163,7 @@ export const auth = createRouter()
 				data: { hashedPassword: await hashPassword(input.password) },
 			})
 
-			ctx.jwtCookie = createCookie('uid', await signJWT({ id: user.id }), 7 * 24 * 60 * 60)
+			await ctx.session.create(user.id)
 
 			return {}
 		},
