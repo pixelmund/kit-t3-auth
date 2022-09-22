@@ -6,6 +6,7 @@ declare namespace App {
 
 	interface Locals {
 		user: import('@trpc/server').inferAsyncReturnType<GetUser>
+		session: import('svelte-kit-cookie-session').Session<{ userId?: number }>
 	}
 	interface PageData {
 		userId?: number | null
